@@ -1,0 +1,42 @@
+language ESSENCE' 1.0
+
+$ Set up to fill rectangles at present.
+
+$ ---- Parameters & Constants ----
+
+$ no steps and remaining to be inserted.
+
+given gridWidth : int (1..)
+given gridHeight : int (1..)
+letting GRIDCOLS be domain int(1..gridWidth)
+letting GRIDROWS be domain int(1..gridHeight)
+
+given noColours : int (1..)
+letting COLOURS be domain int(1..noColours)
+
+$ ---- Decision Variables ----
+find initGrid : matrix indexed by[GRIDROWS, GRIDCOLS] of COLOURS
+
+$ For value symmetry breaking
+find firstColourOccurrenceRow : matrix indexed by [COLOURS] of GRIDROWS
+find firstColourOccurrenceCol : matrix indexed by [COLOURS] of GRIDCOLS
+
+$ ---- Constraints -------------------------------------------------------------
+such that
+      
+$ But break the symmetry:
+$ Using a row-wise ordering, If colour i is first used in row r, col c then
+$ for all higher rows, nothing >= colour i. and for left in row r, nothing
+$ >= colour i.
+forall colour : COLOURS .
+  initGrid[firstColourOccurrenceRow[colour], firstColourOccurrenceCol[colour]] = colour
+  /\
+  (forall row : GRIDROWS .
+    (row < firstColourOccurrenceRow[colour]) ->
+    (forall col : GRIDCOLS . initGrid[row, col] < colour))
+  /\
+  (forall col : GRIDCOLS .
+    (col < firstColourOccurrenceCol[colour]) ->
+    (initGrid[firstColourOccurrenceRow[colour], col] < colour)),
+    
+true
