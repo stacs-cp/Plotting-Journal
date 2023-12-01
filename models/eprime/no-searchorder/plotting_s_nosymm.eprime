@@ -28,11 +28,6 @@ find hand : matrix indexed by[STEPSFROM0] of COLOURS
 $ Aux to deal with shot down a row hitting a wall and then falling.
 find wallFall : matrix indexed by[STEPSFROM1] of int(0..gridHeight)
 
-$ Aux to deal with monochrome column symmetry
-$ 0 means empty or non-monochrome.
-find monochromeCols : matrix indexed by[STEPSFROM0, GRIDCOLS] of EMPTYANDCOLOURS
-
-
 $ ---- Constraints -------------------------------------------------------------
 such that
 
@@ -78,19 +73,20 @@ $ 0 if no travel in final col.
 forAll step : STEPSFROM1 .
  forAll i : int (1..gridHeight) .
   (wallFall[step] = i)
-  =
+  <->
   (exists row : int(1..gridHeight) .
     (fpRow[step] = row) /\
     $ Travelled to the rightmost column
     (forAll col : int(1..gridWidth) .
-      grid[step-1,row,col] = EMPTY \/
-      grid[step-1,row,col] = hand[step-1]) /\
+      (grid[step-1,row,col] = EMPTY) \/
+      (grid[step-1,row,col] = hand[step-1])) /\
     $ Travelled i in the last column
     (forAll underRow : int (row..row+i-1) .
-      grid[step-1,underRow,gridWidth] = hand[step-1] \/
-      grid[step-1,underRow,gridWidth] = EMPTY) /\
+      (grid[step-1,underRow,gridWidth] = hand[step-1]) \/
+      (grid[step-1,underRow,gridWidth] = EMPTY)) /\
     $ And no more
-    ((grid[step-1,row+i,gridWidth] != hand[step-1]) \/
+    (((grid[step-1,row+i,gridWidth] != hand[step-1]) /\
+      (grid[step-1,row+i,gridWidth] != EMPTY)) \/
      (row+i > gridHeight)) /\
     $ And consumed a block somewhere, otherwise not a progressing move.
     ((exists col : GRIDCOLS .
@@ -368,38 +364,5 @@ forAll step : STEPSFROM1 .
         )
       ),
 $ ---- End: Grid changes to something other than empty
-
-$ ---- Interchangeable Moves
-$ Sequences of monochrome column shots can be permuted. Break that sym.
-
-$ Channel to the monochrome columns variables.
-$ Set up an iff for each colour, defaults to 0 for empty or non-monochrome.
-forAll step : int(0..noSteps) .
-  forAll gCol : int(1..gridWidth) .
-    forAll colour : COLOURS .
-      (monochromeCols[step, gCol] = colour)
-      =
-      (
-        $ not empty
-        (grid[step, gridHeight, gCol] = colour) /\
-        $ monochrome
-        (forAll gRow : int(1..gridHeight-1) .
-           (grid[step, gRow, gCol] = colour) \/
-           (grid[step, gRow, gCol] = EMPTY))
-      ),
-$ Use monochrome columns variables to break the symmetry.
-forAll step : int(1..noSteps-1) .
-  forAll gCol : int(1..gridWidth-1) .
-    forAll gCol2 : int(gCol+1..gridWidth) .
-      ((monochromeCols[step-1, gCol] != EMPTY) /\
-       (monochromeCols[step-1, gCol] = monochromeCols[step-1, gCol2]))
-      ->
-      (
-        $ If consecutive must be left to right
-        fpCol[step] = gCol2
-        ->
-        fpCol[step+1] != gCol
-      ),
-$ ---- End of Interchangeable Moves
 
 true
